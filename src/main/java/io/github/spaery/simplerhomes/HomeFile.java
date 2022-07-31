@@ -6,7 +6,9 @@ import java.util.function.Consumer;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.Sound;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -17,8 +19,8 @@ import org.bukkit.scheduler.BukkitTask;
 
 public class HomeFile {
     SimplerHomes instance = SimplerHomes.getInstance();
-    File homesFile = new File("plugins/SimplerHomes", "homes.yml");
-    FileConfiguration homes = YamlConfiguration.loadConfiguration(homesFile);
+    File homesFile = new File(instance.getDataFolder(), "homes.yml");
+    public FileConfiguration homes = YamlConfiguration.loadConfiguration(homesFile);
 
     /**
      * Writes the coords for pl into YAML file
@@ -27,12 +29,12 @@ public class HomeFile {
      */
     public void setHome(Player pl, String homeName){
         Location loc = pl.getLocation();
-        String configPath = pl.getDisplayName() + "." + homeName;
+        String configPath = pl.getName() + "." + homeName;
         int i = 0;
         // Checks to ensure home limit is not reached.
         // home limit is set the the config.yml
-        if (homes.getConfigurationSection(pl.getDisplayName()) != null){
-            for (String key : homes.getConfigurationSection(pl.getDisplayName()).getKeys(false)){
+        if (homes.getConfigurationSection(pl.getName()) != null){
+            for (String key : homes.getConfigurationSection(pl.getName()).getKeys(false)){
                 i++;
                 if(key.equals(homeName)){
                     throw new ArithmeticException();
@@ -55,27 +57,37 @@ public class HomeFile {
         saveFile(homesFile);
     }
     /**
-     * Shows availabe homes to the player
+     * Shows available homes to the player
      * @param pl the player sending the command
      */
     public void homes(Player pl){
-        String homesList = new String();
-        if (homes.getConfigurationSection(pl.getDisplayName()) != null){
-            for (String key : homes.getConfigurationSection(pl.getDisplayName()).getKeys(false)){
-                homesList = homesList + key + " ";
+        homes(pl, pl);
+    }
+
+    /**
+     * Shows available homes of a player to the sender
+     * @param pl the player whose homes the sender is looking for
+     * @param sender the player or console who sent the command
+     */
+    public void homes(OfflinePlayer pl, CommandSender sender){
+        StringBuilder homesList = new StringBuilder();
+        if (homes.getConfigurationSection(pl.getName()) != null){
+            for (String key : homes.getConfigurationSection(pl.getName()).getKeys(false)){
+                homesList.append(key).append(" ");
             }
-            pl.sendMessage(homesList);
+            sender.sendMessage(homesList.toString());
         } else{
-            pl.sendMessage("You have no homes.");
+            sender.sendMessage((sender instanceof Player player && pl.equals(player) ? "You" : pl.getName()) + " have no homes.");
         }
     }
+
     /**
      * Sends the player to the specified home
      * @param pl the player sending the command
      * @param homeName the name of the specified home to go to
      */
     public void home(Player pl, String homeName){
-        String configPath = pl.getDisplayName() + "." + homeName;
+        String configPath = pl.getName() + "." + homeName;
         try {
             Location loc = new Location(
                 Bukkit.getWorld(homes.getString(configPath + ".World")),
@@ -84,11 +96,12 @@ public class HomeFile {
                 homes.getDouble(configPath + ".Z"),
                 (float) homes.getDouble(configPath + ".Yaw"),
                 (float) homes.getDouble(configPath + ".Pitch"));
-            Bukkit.getScheduler().runTaskTimer(instance, new Consumer<BukkitTask>(){
+            Bukkit.getScheduler().runTaskTimer(instance, new Consumer<>() {
                 int i = instance.getConfig().getInt("TimeToWait");
+
                 @Override
-                public void accept(BukkitTask task){
-                    if(i <= 0){
+                public void accept(BukkitTask task) {
+                    if (i <= 0) {
                         pl.teleport(loc);
                         task.cancel();
                     } else {
@@ -109,7 +122,7 @@ public class HomeFile {
      * @param homeName the name of the specified home to delete
      */
     public void delHome(Player pl, String homeName){
-        String configPath = pl.getDisplayName() + "." + homeName;
+        String configPath = pl.getName() + "." + homeName;
         try {
             if(homes.contains(configPath)){
                 homes.set(configPath, null);

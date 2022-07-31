@@ -2,7 +2,10 @@ package io.github.spaery.simplerhomes;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 
+import org.bukkit.Bukkit;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.InvalidConfigurationException;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -66,5 +69,12 @@ public class SimplerHomes extends JavaPlugin
         } catch (IOException | InvalidConfigurationException e) {
             e.printStackTrace();
         }
+    }
+
+    public OfflinePlayer getOfflinePlayer(String name){
+        for(OfflinePlayer p : Bukkit.getOfflinePlayers()){
+            if(Objects.equals(name, p.getName())) return p;
+        }
+        return null;
     }
 }
